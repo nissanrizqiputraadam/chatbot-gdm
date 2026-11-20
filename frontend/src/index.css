@@ -1,0 +1,46 @@
+:root {
+  --canvas: #e9eef5;
+  --sheet: #ffffff;
+  --ink: #1b2432;
+  --muted: #586274;
+  --line: #dde4ee;
+  --accent: #0b5cad;
+  --accent-soft: #e4effa;
+  --accent-ink: #ffffff;
+  --bot: #f1f4f9;
+  --danger: #b42318;
+  --danger-bg: #fdecea;
+  --warn-bg: #fff4d6;
+  --radius-lg: 28px;
+  --radius-md: 18px;
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #0f1621;
+    --sheet: #171f2c;
+    --ink: #e8edf5;
+    --muted: #9aa6b8;
+    --line: #2a3546;
+    --accent: #6aa8ee;
+    --accent-soft: #1d2d44;
+    --accent-ink: #0b1626;
+    --bot: #1f2938;
+    --danger: #ff8a80;
+    --danger-bg: #3a1f1f;
+    --warn-bg: #3a3118;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; color: inherit; }

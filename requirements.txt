@@ -1,0 +1,10 @@
+pandas
+openpyxl
+scikit-learn
+Sastrawi
+joblib
+matplotlib
+ipykernel
+tensorflow
+fastapi
+uvicorn
