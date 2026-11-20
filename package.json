@@ -1,0 +1,7 @@
+{
+  "name": "chatbot-gdm",
+  "private": true,
+  "scripts": {
+    "dev:all": "node dev-all.mjs"
+  }
+}

@@ -41,13 +41,13 @@ export default function App() {
         ...prev,
         { id: Date.now() + 1, role: "bot", paragraphs: data.reply, kind: data.type },
       ]);
-    } catch {
+    } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
           role: "bot",
-          paragraphs: ["Pesan belum terkirim karena server tidak merespons. Coba lagi beberapa saat lagi."],
+          paragraphs: [error.message || "Pesan gagal dikirim. Periksa apakah backend berjalan."],
           kind: "error",
         },
       ]);

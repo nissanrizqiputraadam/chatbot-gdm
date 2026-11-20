@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from pathlib import Path
 
@@ -36,9 +37,16 @@ PERSONAL_NOTE = ("Untuk menilai angka milik Anda sendiri, silakan konsultasikan 
                  "pemeriksaan Anda ke dokter atau tenaga kesehatan.")
 
 app = FastAPI(title="Chatbot GDM")
+frontend_origins = [
+    origin.strip().rstrip("/")
+    for origin in os.getenv("FRONTEND_ORIGINS", "").split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],   # alamat frontend Vite
+    allow_origins=frontend_origins,
+    # Untuk development lokal; domain production diatur lewat FRONTEND_ORIGINS.
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_methods=["*"],
     allow_headers=["*"],
 )
