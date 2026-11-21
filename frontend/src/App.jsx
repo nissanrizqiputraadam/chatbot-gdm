@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import MessageBubble from "./components/MessageBubble";
+import Landing from "./components/Landing";
 import { DropIcon, ArrowUpIcon } from "./components/Icons";
 import { sendMessage } from "./api";
 import "./App.css";
@@ -14,6 +15,7 @@ const TOPICS = [
 
 export default function App() {
   const [messages, setMessages] = useState([]);
+  const [showChat, setShowChat] = useState(() => window.location.hash === "#chatbot");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
@@ -23,6 +25,23 @@ export default function App() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    const chatHash = "#chatbot";
+    const baseUrl = `${window.location.pathname}${window.location.search}`;
+
+    // If someone opens /#chatbot directly, create a landing entry behind it.
+    if (window.location.hash === chatHash && window.history.state?.screen !== "chat") {
+      window.history.replaceState({ screen: "landing" }, "", baseUrl);
+      window.history.pushState({ screen: "chat" }, "", `${baseUrl}${chatHash}`);
+    }
+
+    const syncScreenWithHistory = () => {
+      setShowChat(window.location.hash === chatHash);
+    };
+    window.addEventListener("popstate", syncScreenWithHistory);
+    return () => window.removeEventListener("popstate", syncScreenWithHistory);
+  }, []);
 
   async function handleSend(text) {
     const content = text.trim();
@@ -67,6 +86,24 @@ export default function App() {
     inputRef.current?.focus();
   }
 
+  function openChat() {
+    const url = `${window.location.pathname}${window.location.search}#chatbot`;
+    window.history.pushState({ screen: "chat" }, "", url);
+    setShowChat(true);
+  }
+
+  function returnToLanding() {
+    if (window.location.hash === "#chatbot") {
+      window.history.back();
+    } else {
+      setShowChat(false);
+    }
+  }
+
+  if (!showChat) {
+    return <Landing onAsk={openChat} />;
+  }
+
   return (
     <div className="page">
       <div className="sheet">
@@ -78,11 +115,16 @@ export default function App() {
               <p>Diabetes pada kehamilan</p>
             </div>
           </div>
-          {started && (
-            <button className="ghost" onClick={resetChat} disabled={loading}>
-              Percakapan baru
+          <div className="top-actions">
+            <button className="ghost" onClick={returnToLanding} disabled={loading}>
+              Beranda
             </button>
-          )}
+            {started && (
+              <button className="ghost" onClick={resetChat} disabled={loading}>
+                Percakapan baru
+              </button>
+            )}
+          </div>
         </header>
 
         <main className="log" role="log" aria-live="polite">

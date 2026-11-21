@@ -8,7 +8,9 @@ diakses dari perangkat yang menjalankannya.
 1. Push proyek ini ke repository GitHub.
 2. Di Render, pilih **New > Blueprint** dan hubungkan repository tersebut.
 3. Render membaca `render.yaml`; lanjutkan pembuatan layanan `chatbot-gdm-api`.
-4. Setelah deploy, buka alamat backend Render dan pastikan halaman `/` menampilkan
+4. Di bagian **Environment Variables** layanan Render, tambahkan:
+   - `GEMINI_API_KEY`: API key Gemini Anda.
+5. Setelah deploy, buka alamat backend Render dan pastikan halaman `/` menampilkan
    `{"status":"ok"}`. Catat alamat itu, misalnya `https://chatbot-gdm-api.onrender.com`.
 
 ## Frontend di Vercel

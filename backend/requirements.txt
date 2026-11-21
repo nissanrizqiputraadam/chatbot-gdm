@@ -3,3 +3,6 @@ uvicorn[standard]
 joblib
 scikit-learn
 Sastrawi
+numpy
+google-generativeai
+python-dotenv
