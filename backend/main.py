@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from nlp_utils import clean_text
 from rag_engine import get_engine
+from summary import build_summary
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -74,6 +75,15 @@ if not rag._api_key:
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=500)
+
+class SummaryItem(BaseModel):
+    question: str = Field(max_length=500)
+    intent: str | None = None
+    type: str = "answer"
+    answer: list[str] = []   # paragraf jawaban bot (untuk merangkum konten aktual)
+
+class SummaryRequest(BaseModel):
+    items: list[SummaryItem] = Field(min_length=1, max_length=50)
 
 
 def to_paragraphs(text, per=2):
@@ -264,3 +274,9 @@ def chat(req: ChatRequest):
         "type": "intent",
         "source": None,
     }
+
+
+@app.post("/summary")
+def summarize(req: SummaryRequest):
+    return build_summary(req.items)
+

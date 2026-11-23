@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import MessageBubble from "./components/MessageBubble";
+import SummaryCard from "./components/SummaryCard";
 import Landing from "./components/Landing";
 import { DropIcon, ArrowUpIcon } from "./components/Icons";
-import { sendMessage } from "./api";
+import { sendMessage, getSummary } from "./api";
 import "./App.css";
 
 const TOPICS = [
@@ -15,25 +16,35 @@ const TOPICS = [
 
 export default function App() {
   const [messages, setMessages] = useState([]);
-  const [showChat, setShowChat] = useState(() => window.location.hash === "#chatbot");
+  // Selalu mulai dari Landing; hash #chatbot hanya dipakai untuk navigasi maju/mundur
+  const [showChat, setShowChat] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Ringkasan sesi
+  const [summary, setSummary] = useState(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryError, setSummaryError] = useState(false);
+
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const started = messages.length > 0;
+  const busy = loading || summarizing;
+  const ended = summary !== null;
+  const canSummarize = messages.some((m) => m.role === "bot" && m.question);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, loading]);
+  }, [messages, loading, summarizing, summary, summaryError]);
 
   useEffect(() => {
     const chatHash = "#chatbot";
     const baseUrl = `${window.location.pathname}${window.location.search}`;
 
-    // If someone opens /#chatbot directly, create a landing entry behind it.
-    if (window.location.hash === chatHash && window.history.state?.screen !== "chat") {
+    // Jika URL dibuka langsung dengan #chatbot, bersihkan hash dan mulai dari landing
+    if (window.location.hash === chatHash) {
       window.history.replaceState({ screen: "landing" }, "", baseUrl);
-      window.history.pushState({ screen: "chat" }, "", `${baseUrl}${chatHash}`);
+      setShowChat(false);
     }
 
     const syncScreenWithHistory = () => {
@@ -45,7 +56,7 @@ export default function App() {
 
   async function handleSend(text) {
     const content = text.trim();
-    if (!content || loading) return;
+    if (!content || busy || ended) return;
 
     setMessages((prev) => [
       ...prev,
@@ -58,7 +69,14 @@ export default function App() {
       const data = await sendMessage(content);
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, role: "bot", paragraphs: data.reply, kind: data.type },
+        {
+          id: Date.now() + 1,
+          role: "bot",
+          paragraphs: data.reply,
+          kind: data.type,
+          intent: data.intent ?? null, // dipakai untuk ringkasan
+          question: content,           // dipakai untuk ringkasan
+        },
       ]);
     } catch (error) {
       setMessages((prev) => [
@@ -75,6 +93,30 @@ export default function App() {
     }
   }
 
+  async function endChat() {
+    if (busy || ended) return;
+
+    const items = messages
+      .filter((m) => m.role === "bot" && m.question)
+      .map((m) => ({
+        question: m.question,
+        intent: m.intent ?? null,
+        type: m.kind ?? "answer",
+        answer: m.paragraphs ?? [],   // kirim paragraf jawaban bot untuk dirangkum
+      }));
+    if (items.length === 0) return;
+
+    setSummarizing(true);
+    setSummaryError(false);
+    try {
+      setSummary(await getSummary(items));
+    } catch {
+      setSummaryError(true);
+    } finally {
+      setSummarizing(false);
+    }
+  }
+
   function onSubmit(e) {
     e.preventDefault();
     handleSend(input);
@@ -83,7 +125,9 @@ export default function App() {
   function resetChat() {
     setMessages([]);
     setInput("");
-    inputRef.current?.focus();
+    setSummary(null);
+    setSummaryError(false);
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function openChat() {
@@ -116,11 +160,16 @@ export default function App() {
             </div>
           </div>
           <div className="top-actions">
-            <button className="ghost" onClick={returnToLanding} disabled={loading}>
+            <button className="ghost" onClick={returnToLanding} disabled={busy}>
               Beranda
             </button>
+            {canSummarize && !ended && (
+              <button className="ghost" onClick={endChat} disabled={busy}>
+                {summarizing ? "Menyusun…" : "Akhiri & ringkas"}
+              </button>
+            )}
             {started && (
-              <button className="ghost" onClick={resetChat} disabled={loading}>
+              <button className="ghost" onClick={resetChat} disabled={busy}>
                 Percakapan baru
               </button>
             )}
@@ -135,7 +184,7 @@ export default function App() {
               <ul className="topics">
                 {TOPICS.map((t) => (
                   <li key={t.q}>
-                    <button onClick={() => handleSend(t.q)} disabled={loading}>
+                    <button onClick={() => handleSend(t.q)} disabled={busy}>
                       <span className="t-title">{t.q}</span>
                       <span className="t-hint">{t.hint}</span>
                     </button>
@@ -149,41 +198,59 @@ export default function App() {
             <MessageBubble key={m.id} role={m.role} paragraphs={m.paragraphs} kind={m.kind} />
           ))}
 
-          {loading && (
+          {busy && (
             <div className="msg bot">
               <span className="avatar"><DropIcon /></span>
-              <div className="bubble bot typing" aria-label="Sedang mengetik">
+              <div
+                className="bubble bot typing"
+                aria-label={summarizing ? "Menyusun ringkasan" : "Sedang mengetik"}
+              >
                 <span></span><span></span><span></span>
               </div>
             </div>
           )}
 
+          {summaryError && (
+            <p className="summary-error">
+              Ringkasan belum dapat dibuat. Coba lagi beberapa saat lagi.
+            </p>
+          )}
+
+          {summary && <SummaryCard data={summary} onRestart={resetChat} />}
+
           <div ref={bottomRef} />
         </main>
 
-        {started && (
+        {started && !ended && (
           <div className="chips" aria-label="Topik cepat">
             {TOPICS.map((t) => (
-              <button key={t.q} onClick={() => handleSend(t.q)} disabled={loading}>
+              <button key={t.q} onClick={() => handleSend(t.q)} disabled={busy}>
                 {t.q}
               </button>
             ))}
           </div>
         )}
 
-        <form className="composer" onSubmit={onSubmit}>
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Tulis pertanyaan Anda"
-            maxLength={500}
-            aria-label="Pesan"
-          />
-          <button className="send" type="submit" disabled={loading || !input.trim()} aria-label="Kirim pesan">
-            <ArrowUpIcon />
-          </button>
-        </form>
+        {!ended && (
+          <form className="composer" onSubmit={onSubmit}>
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Tulis pertanyaan Anda"
+              maxLength={500}
+              aria-label="Pesan"
+            />
+            <button
+              className="send"
+              type="submit"
+              disabled={busy || !input.trim()}
+              aria-label="Kirim pesan"
+            >
+              <ArrowUpIcon />
+            </button>
+          </form>
+        )}
 
         <p className="note">
           Informasi ini bersifat edukatif, bukan diagnosis. Konsultasikan kondisi Anda

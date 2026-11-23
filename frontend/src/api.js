@@ -1,12 +1,12 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
 
-export async function sendMessage(message) {
+async function postJson(path, body) {
   let res;
   try {
-    res = await fetch(`${API_URL}/chat`, {
+    res = await fetch(`${API_URL}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(body),
     });
   } catch {
     throw new Error(`Tidak dapat menghubungi backend di ${API_URL}. Pastikan backend berjalan.`);
@@ -18,4 +18,12 @@ export async function sendMessage(message) {
   }
 
   return res.json();
+}
+
+export function sendMessage(message) {
+  return postJson("/chat", { message });
+}
+
+export function getSummary(items) {
+  return postJson("/summary", { items });
 }

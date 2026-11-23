@@ -324,6 +324,86 @@ button:focus-visible {
   }
 }
 
+/* ---------- Ringkasan ---------- */
+.summary {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bot);
+  animation: rise 0.3s ease-out both;
+}
+.summary h2 { margin: 0 0 8px; font-size: 1.15rem; letter-spacing: -0.01em; }
+.summary h3 { margin: 18px 0 6px; font-size: 0.95rem; }
+.summary p, .summary li { font-size: 0.95rem; line-height: 1.6; }
+.summary p { margin: 0 0 6px; }
+.summary ul { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
+.summary-note { margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: var(--warn-bg); }
+.summary-note p:last-child { margin-bottom: 0; }
+.summary-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.summary-error { color: var(--danger); font-size: 0.9rem; }
+
+/* Header ringkasan */
+.summary-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.summary-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.summary-meta {
+  color: var(--muted);
+  font-size: 0.85rem !important;
+  margin-bottom: 14px !important;
+}
+
+/* Blok kesimpulan utama */
+.summary-conclusion {
+  padding: 14px 16px;
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+  background: var(--sheet);
+  margin-bottom: 4px;
+}
+.summary-conclusion h3 {
+  margin: 0 0 8px !important;
+  color: var(--accent);
+  font-size: 0.9rem !important;
+}
+.summary-conclusion p {
+  margin: 0 !important;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+/* Q&A list (legacy, bisa dihapus jika tidak dipakai) */
+.summary-qa-list { display: grid; gap: 12px; margin-top: 4px; }
+.summary-qa-item {
+  padding: 12px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  background: var(--sheet);
+}
+.summary-qa-q { font-weight: 600; margin: 0 0 6px !important; color: var(--accent); }
+.summary-qa-a { margin: 0 !important; }
+
+.btn {
+  padding: 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
 @media (max-width: 520px) {
   .top {
     padding: 14px 16px;
