@@ -64,6 +64,12 @@ app.add_middleware(
 
 # Muat RAG engine saat startup
 rag = get_engine()
+if not rag._api_key:
+    logger.warning("=" * 60)
+    logger.warning("⚠️  PERINGATAN: File backend/.env belum ada atau GEMINI_API_KEY kosong!")
+    logger.warning("Tanpa Gemini API Key atau Ollama, chatbot akan fallback ke kutipan buku teks bahasa Inggris.")
+    logger.warning("Silakan buat file backend/.env sesuai petunjuk di CATATAN_RUN_PROJECT.md.")
+    logger.warning("=" * 60)
 
 
 class ChatRequest(BaseModel):
