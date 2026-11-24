@@ -40,12 +40,11 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "auto").strip().lower()
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat").strip()
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:1.5b").strip()
 
-# Model Gemini yang dicoba berurutan jika salah satu sedang sibuk/503
+# Model Gemini resmi yang aktif dan didukung API
 GEMINI_MODELS = [
     "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
     "gemini-flash-latest",
-    "gemini-3.8-flash",
 ]
 
 _CITATION_PATTERNS = [
@@ -190,7 +189,7 @@ ATURAN UTAMA JAWABAN:
         }
 
         try:
-            resp = requests.post(self._ollama_url, json=payload, timeout=60)
+            resp = requests.post(self._ollama_url, json=payload, timeout=3)
             if resp.status_code == 200:
                 data = resp.json()
                 content = data.get("message", {}).get("content", "").strip()
@@ -199,8 +198,9 @@ ATURAN UTAMA JAWABAN:
                     return content
             else:
                 logger.warning("Ollama status %d: %s", resp.status_code, resp.text[:150])
-        except Exception as e:
-            logger.warning("Gagal terhubung ke Ollama (%s): %s", self._ollama_url, e)
+        except Exception:
+            # Ollama lokal tidak aktif/tidak merespons, lewati dengan cepat
+            pass
 
         return None
 
@@ -221,7 +221,7 @@ ATURAN UTAMA JAWABAN:
         for model_name in GEMINI_MODELS:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self._api_key}"
             try:
-                resp = requests.post(url, json=payload, timeout=20)
+                resp = requests.post(url, json=payload, timeout=15)
                 if resp.status_code == 200:
                     data = resp.json()
                     candidates = data.get("candidates", [])
@@ -234,7 +234,10 @@ ATURAN UTAMA JAWABAN:
                     logger.warning("Model %s 503 (sibuk), mencoba model berikutnya...", model_name)
                     continue
                 else:
-                    logger.warning("Model %s returned status %d: %s", model_name, resp.status_code, resp.text[:150])
+                    logger.warning("Model %s status %d", model_name, resp.status_code)
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                logger.warning("Koneksi/timeout ke Gemini API (%s). Melewati ke model lokal.", model_name)
+                break
             except Exception as e:
                 logger.warning("Gagal request ke %s: %s", model_name, e)
                 continue

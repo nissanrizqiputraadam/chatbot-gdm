@@ -1,18 +1,4 @@
 export default function SummaryCard({ data, onRestart }) {
-  function copy() {
-    const baris = ["=== Ringkasan Percakapan GDM ==="];
-    if (data.ringkasan) baris.push(data.ringkasan);
-    baris.push("");
-    baris.push("Kesimpulan:");
-    baris.push(data.kesimpulan);
-    baris.push("");
-    if (data.saran?.length > 0) {
-      baris.push("Saran:");
-      data.saran.forEach((s) => baris.push("• " + s));
-    }
-    navigator.clipboard?.writeText(baris.join("\n"));
-  }
-
   const badgeLabel =
     data.sumber === "gemini"
       ? "Diringkas oleh AI"

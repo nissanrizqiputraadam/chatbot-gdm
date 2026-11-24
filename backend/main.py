@@ -109,10 +109,6 @@ def rag_to_paragraphs(answer: str, page: int | None, source: str = "tfidf") -> l
             if para:
                 result.append(para)
 
-    if page:
-        result.append(f"📖 Referensi: Textbook of Diabetes and Pregnancy, halaman {page}.")
-
-    result.append(DISCLAIMER_RAG)
     return result
 
 
@@ -227,13 +223,13 @@ def chat(req: ChatRequest):
         if rag_result is None and search_target != original:
             rag_result = rag.query(user_text=original, search_query=original, threshold=RAG_THRESHOLD)
 
-    if rag_result is not None:
+    # Jika RAG berhasil dijawab oleh AI (Gemini / Ollama dalam Bahasa Indonesia)
+    if rag_result is not None and rag_result.get("source") != "tfidf":
         paragraphs = rag_to_paragraphs(
             rag_result["answer"],
             rag_result["page"],
             rag_result.get("source", "tfidf"),
         )
-        # Tambahkan catatan personal jika user menyebut angka miliknya sendiri
         if re.search(r"\d", cleaned) and "saya" in cleaned.split():
             paragraphs.append(PERSONAL_NOTE)
 
@@ -245,33 +241,53 @@ def chat(req: ChatRequest):
             "source": {
                 "page": rag_result["page"],
                 "score": rag_result["score"],
-                "engine": rag_result.get("source", "tfidf"),  # "gemini" | "tfidf"
+                "engine": rag_result.get("source", "tfidf"),
             },
         }
-    # 3. Fallback ke intent classifier (model ML lama)
+
+    # 3. Model Intent Classifier Lokal (Cepat, 100% Offline & Bahasa Indonesia)
     proba = model.predict_proba([cleaned])[0]
     best = int(proba.argmax())
     intent = model.classes_[best]
     confidence = float(proba[best])
 
-    if confidence < THRESHOLD:
+    if confidence >= THRESHOLD:
+        paragraphs = to_paragraphs(ANSWERS[intent])
+        if re.search(r"\d", cleaned) and "saya" in cleaned.split():
+            paragraphs.append(PERSONAL_NOTE)
+
         return {
-            "reply": FALLBACK,
-            "intent": None,
+            "reply": paragraphs,
+            "intent": intent,
             "confidence": round(confidence, 3),
-            "type": "fallback",
+            "type": "intent",
             "source": None,
         }
 
-    paragraphs = to_paragraphs(ANSWERS[intent])
-    if re.search(r"\d", cleaned) and "saya" in cleaned.split():
-        paragraphs.append(PERSONAL_NOTE)
+    # 4. Fallback ke teks RAG jika intent tidak cocok tapi ada kutipan buku
+    if rag_result is not None:
+        paragraphs = rag_to_paragraphs(
+            rag_result["answer"],
+            rag_result["page"],
+            "tfidf",
+        )
+        return {
+            "reply": paragraphs,
+            "intent": "rag",
+            "confidence": rag_result["score"],
+            "type": "rag",
+            "source": {
+                "page": rag_result["page"],
+                "score": rag_result["score"],
+                "engine": "tfidf",
+            },
+        }
 
     return {
-        "reply": paragraphs,
-        "intent": intent,
+        "reply": FALLBACK,
+        "intent": None,
         "confidence": round(confidence, 3),
-        "type": "intent",
+        "type": "fallback",
         "source": None,
     }
 

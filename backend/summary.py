@@ -28,7 +28,6 @@ GEMINI_MODELS = [
     "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
     "gemini-flash-latest",
-    "gemini-3.8-flash",
 ]
 
 SARAN_UMUM = [
@@ -110,7 +109,7 @@ Kesimpulan:"""
             f"{model}:generateContent?key={GEMINI_API_KEY}"
         )
         try:
-            resp = requests.post(url, json=payload, timeout=20)
+            resp = requests.post(url, json=payload, timeout=15)
             if resp.status_code == 200:
                 candidates = resp.json().get("candidates", [])
                 if candidates:
@@ -126,6 +125,9 @@ Kesimpulan:"""
                         return text
             elif resp.status_code == 503:
                 continue
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+            logger.warning("Gemini summarize koneksi/timeout, fallback ke ekstraktif.")
+            break
         except Exception as exc:
             logger.warning("Gemini summarize gagal (%s): %s", model, exc)
             continue
